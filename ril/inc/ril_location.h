@@ -56,7 +56,7 @@ typedef struct{
 typedef void(*CB_LocInfo)(s32 result,ST_LocInfo* loc_info);
 
 s32 RIL_GetLocation(CB_LocInfo cb_loc);
-
+s32 RIL_GetLocation_Ex(ST_LocInfo* locinfo);
 s32 RIL_GetLocationByCell(ST_CellInfo* cell, CB_LocInfo cb_loc);
 
 #endif  //__RIL_LOCATION_H__

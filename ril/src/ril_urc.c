@@ -76,6 +76,7 @@ extern void OnURCHandler_BTVisible(const char* strURC, void* reserved);
 extern void OnURCHandler_BTGatscon(const char* strURC, void* reserved);
 extern void OnURCHandler_BTGatwreq(const char* strURC, void* reserved);
 extern void OnURCHandler_BTGatrreq(const char* strURC, void* reserved);
+extern void OnURCHandler_BTGatewreq(const char* strURC, void* reserved);
 extern void OnURCHandler_BTpxpscon(const char* strURC, void* reserved);
 extern void OnURCHandler_BTfmpscon(const char* strURC, void* reserved);
 #endif
@@ -88,7 +89,9 @@ extern void OnURCHandler_QWDTMF( const char* strURC, void* reserved );
 extern void OnURCHandler_GPSCMD(const char* strURC, void* reserved);
 // NTP URC callback
 extern void OnURCHandler_NTPCMD(const char* strURC, void* reserved);
-
+#ifdef __OCPU_RIL_QLBS_SUPPORT__
+extern void OnURCHandler_QLBS(const char* strURC,void* reserved);
+#endif
 /************************************************************************/
 /* Customer ATC URC callback                                          */
 /************************************************************************/
@@ -195,6 +198,7 @@ const static ST_URC_HDLENTRY m_AtURCHdlEntry[] = {
     {"\r\n+QBTGATSCON:",                             OnURCHandler_BTGatscon},
     {"\r\n+QBTGATWREQ:",                             OnURCHandler_BTGatwreq},
     {"\r\n+QBTGATRREQ:",                             OnURCHandler_BTGatrreq},
+    {"\r\n+QBTGATEWREQ:",                            OnURCHandler_BTGatewreq},
     {"\r\n+QBTPXPSCON:",                              OnURCHandler_BTpxpscon},
     {"\r\n+QBTFMPSCONSREG:",                      OnURCHandler_BTfmpscon},
 #endif
@@ -208,6 +212,9 @@ const static ST_URC_HDLENTRY m_AtURCHdlEntry[] = {
 
 	//NTP unsolicited response
 	{"\r\n+QNTP:",							  	  OnURCHandler_NTPCMD},
+#ifdef __OCPU_RIL_QLBS_SUPPORT__
+    {"\r\n+QLBS:",							  	  OnURCHandler_QLBS},
+#endif
 };
 
 static void OnURCHandler_SIM(const char* strURC, void* reserved)

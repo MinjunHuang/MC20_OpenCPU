@@ -138,6 +138,15 @@ s32 RIL_FTP_QFTPOPEN(u8* hostName, u32 port,u8* userName,u8* password, bool mode
     {
         return ret;
     }
+	
+	Ql_memset(strAT, 0, sizeof(strAT));
+    Ql_sprintf(strAT, "AT+QFTPCFG=6,1\n");
+    ret = Ql_RIL_SendATCmd(strAT,Ql_strlen(strAT),NULL,NULL,0);
+    RIL_FTP_DEBUG(DBG_Buffer,"<-- Send AT:%s, ret = %d -->\r\n",strAT, ret);
+    if (RIL_AT_SUCCESS != ret)
+    {
+        return ret;
+    }
 
 #if 1   //AT+QIREGAPP is not necessary in RDA platform, just verify QISTAT
     Ql_memset(strAT, 0, sizeof(strAT));

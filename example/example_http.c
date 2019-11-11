@@ -47,10 +47,10 @@ static char DBG_BUFFER[DBG_BUF_LEN];
 //
 #if (HTTP_REQUEST == 0)
 // url for http-get
-#define HTTP_URL_ADDR   "http://www.baidu.com/\0"
+#define HTTP_URL_ADDR   "http://www.quectel.com/\0"
 #elif (HTTP_REQUEST == 1)
 // url for http-post
-#define HTTP_URL_ADDR   "http://www.baidu.com/\0"
+#define HTTP_URL_ADDR   "http://www.quectel.com/\0"
 #elif (HTTP_REQUEST == 2)
 // url for http-file
 #define HTTP_URL_ADDR   "http://124.74.41.170:5015/index.html\0"

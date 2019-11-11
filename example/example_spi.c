@@ -510,6 +510,30 @@ void flash_rd_data(u32 addr, u8 *pbuff, u32 len)
         APP_DEBUG("func(%s),line(%d),here has a failed operation.\r\n",__func__,__LINE__)  
     }
 }
+
+//@flash read data full-duplex API
+void flash_rd_id_ex(void)
+{
+    s32 ret = 0;
+    u8 wr_buff[32]={0x9f};
+    u8 rd_buff[32]={0xff};
+
+	spi_flash_cs(0);
+    ret = Ql_SPI_WriteRead_Ex(USR_SPI_CHANNAL,wr_buff,1, rd_buff,4);
+	spi_flash_cs(1);
+    if(ret==4)
+    {
+        APP_DEBUG("%x\r\n",rd_buff[0])  
+        APP_DEBUG("%x\r\n",rd_buff[1])  
+        APP_DEBUG("%x\r\n",rd_buff[2])
+        APP_DEBUG("%x\r\n",rd_buff[3])
+    }    
+    else 
+    {
+        APP_DEBUG("func(%s),line(%d),here has a failed operation.\r\n",__func__,__LINE__)   
+    }
+}
+
 //MX25L1606E FLASH operation
 //@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@@
 
@@ -542,7 +566,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
                 //BEGIN: MX25L1606E FLASH OPERATION
                 //read the flash's ID
                 Ql_memset(buffer, 0x0, sizeof(buffer));
-                Ql_sprintf(buffer, "ql_spi_rd_flash_id");               
+                Ql_sprintf(buffer, "ql_spi_rd_flash_id1");               
                 ret = Ql_strncmp(Read_Buffer, buffer, Ql_strlen(buffer)); 
                 if (!ret)
                 {
@@ -608,6 +632,18 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
                         APP_DEBUG("error.\r\n")
                     break;
                 } 
+                //read the flash's ID by full-duplex API
+                Ql_memset(buffer, 0x0, sizeof(buffer));
+                Ql_sprintf(buffer, "ql_spi_rd_flash_id2");               
+                ret = Ql_strncmp(Read_Buffer, buffer, Ql_strlen(buffer)); 
+                if (!ret)
+                {
+                    if (cmd_is_over())
+                        flash_rd_id_ex();
+                    else
+                        APP_DEBUG("error.\r\n")
+                    break;
+                }
                 //erase the specificed sector
                 Ql_memset(buffer, 0x0, sizeof(buffer));
                 Ql_sprintf(buffer, "ql_spi_erase_flash_sector");               

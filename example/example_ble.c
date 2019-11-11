@@ -53,9 +53,17 @@ s32 appearance=0;
 s32 string_mode=0;
 char manufacture_data[32]={0};
 char service_data[32]={0};
-u16 adv_service_uuid=0;
+char adv_service_uuid[32]={0};
 
 static char bt_name[BT_NAME_LEN] = "ble_test";
+
+#define NAME_LEN		"0B"		//11
+#define BLE_NAME		"5155454354454c2d4254"
+#define MANUFACTURE_LEN		"09"
+#define MANUFACTURE		"4E42313233343536"
+
+u8 ble_adv_set[62]="020106"NAME_LEN"09"BLE_NAME""MANUFACTURE_LEN"ff"MANUFACTURE"";
+u8 ble_rsp_data[62]="11066e400001b5a3f393e0a9e50e24dcca9e";
 
     
 //void BLE_Test(void);
@@ -137,6 +145,7 @@ void proc_main_task(s32 taskId)
                
                     Qserver1.wrreq_param.need_rsp=0;
                      Ql_memcpy(Qserver1.wrreq_param.value,testdata,sizeof(testdata));
+				//	 APP_DEBUG("\r\n-response data:%s for write request\r\n",testdata);
                     RIL_BT_Gatsrsp(&Qserver1); //response to clent for write requst
              }
                 break;
@@ -147,7 +156,7 @@ void proc_main_task(s32 taskId)
                     Ql_memcpy(Qserver1.wrreq_param.value,testdata,sizeof(testdata));
                     APP_DEBUG("\r\n-response data:%s\r\n",testdata);
                     RIL_BT_Gatsrsp(&Qserver1);//response to clent for read requst
-                };
+                }
                 break; 
             default:
                 break;
@@ -197,7 +206,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
     {
     case EVENT_UART_READY_TO_READ:
         {
-            if (UART_PORT1 == port)
+            if (DEBUG_PORT == port)
             {
                 s32 totalBytes = ReadSerialPort(port, m_RxBuf_Uart1, sizeof(m_RxBuf_Uart1));
                 
@@ -256,16 +265,16 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
                     p2 = Ql_strstr(m_RxBuf_Uart1,"\r\n");
                     if( p1 && p2)
                     {
-                        Ql_memset(Qserver1.wrreq_param.value,0,sizeof(Qserver1.wrreq_param.value));
-                        Ql_strncpy(Qserver1.wrreq_param.value,(char*)p1,p2-p1);
+                        Ql_memset(Qserver1.sind_param.value,0,sizeof(Qserver1.sind_param.value));
+                        Ql_strncpy(Qserver1.sind_param.value,(char*)p1,p2-p1);
                     }
 
                     Qserver1.sid=0;
                     Qserver1.service_id[Qserver1.sid].cid=0;
-                    Qserver1.wrreq_param.attr_handle=Qserver1.service_id[Qserver1.sid].char_id[Qserver1.service_id[Qserver1.sid].cid].char_handle;
-                    Qserver1.wrreq_param.need_cnf=1;
+                    Qserver1.sind_param.attr_handle=Qserver1.service_id[Qserver1.sid].char_id[Qserver1.service_id[Qserver1.sid].cid].char_handle;
+                    Qserver1.sind_param.need_cnf=0;
 
-                    if(Qserver1.conn_status.connect_id==1)
+                    if(Qserver1.conn_status.connect_status == 1)
 					{
 						ret=RIL_BT_Gatsind(&Qserver1);
 						APP_DEBUG("\r\n<--RIL_BT_Gatsind: ret=%d -->\r\n",ret);
@@ -281,11 +290,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
 				
 					Ql_sscanf(m_RxBuf_Uart1, "%*[^=]=%d,%d,%[^,],%[^,],%s[^\r\n]\r\n",&appearance,&string_mode,manufacture_data,service_data,service_temp); //result
 
-					adv_service_uuid = Ql_atoi(service_temp);
-					
-					//APP_DEBUG("\r\n<--RIL_BT_QGatSetadv: %d,%d,%s,%s,%d-->\r\n",appearance,string_mode,manufacture_data,service_data,adv_service_uuid);
-				
-					ret=RIL_BT_QGatSetadv(Qserver1.gserv_id,appearance,string_mode,manufacture_data,service_data,0x6533);
+					ret=RIL_BT_QGatSetadv(Qserver1.gserv_id,appearance,string_mode,manufacture_data,service_data,service_temp);
 
 					APP_DEBUG("\r\n<--RIL_BT_QGatSetadv: ret=%d -->\r\n",ret);
 						   
@@ -372,7 +377,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
 
 static s32 ATResponse_Handler(char* line, u32 len, void* userData)
 {
-    Ql_UART_Write(UART_PORT1, (u8*)line, len);
+    Ql_UART_Write(DEBUG_PORT, (u8*)line, len);
     
     if (Ql_RIL_FindLine(line, len, "OK"))
     {  
@@ -401,14 +406,22 @@ static void BLE_Callback(s32 event, s32 errCode, void* param1, void* param2)
       switch(event)
     {
         case MSG_BLE_CONNECT :
+        {
+            ST_BLE_ConnStatus *conn = (ST_BLE_ConnStatus *)param2;
+            if(Ql_StrPrefixMatch((char *)param1, Qserver1.gserv_id))
             {
-                ST_BLE_ConnStatus *conn = (ST_BLE_ConnStatus *)param2;
-                if(Ql_StrPrefixMatch((char *)param1, Qserver1.gserv_id))
-                {
-                    Ql_memcpy(&Qserver1.conn_status,conn,sizeof(ST_BLE_ConnStatus));
-                }
-            APP_DEBUG("sever_id:%s,connect_id:%d,connect_status=%d\r\n",Qserver1.gserv_id,Qserver1.conn_status.connect_id,Qserver1.conn_status.connect_status);    
-            break;
+                Ql_memcpy(&Qserver1.conn_status,conn,sizeof(ST_BLE_ConnStatus));
+            }
+            APP_DEBUG("sever_id:%s,connect_id:%d,connect_status=%d,Peer_addr:%s\r\n",Qserver1.gserv_id,Qserver1.conn_status.connect_id,Qserver1.conn_status.connect_status,conn->peer_addr);    
+		//根据实际应用设置连接参数，数据传输速度和功耗，综合考虑。
+		//设置太大，对方获取service UUID 时间会很长。	
+		/*	if(conn->connect_status == 1)
+			{
+				s32 ret;
+				ret=RIL_BT_Gatcpu(conn->peer_addr,288,304,600,4);
+				APP_DEBUG("\r\n<--RIL_BT_Gatcpu: ret=%d -->\r\n",ret);
+			}*/
+			break;
         }
         case MSG_BLE_WREG_IND :   
             if(Ql_StrPrefixMatch((char*)param1, Qserver1.gserv_id))
@@ -416,8 +429,10 @@ static void BLE_Callback(s32 event, s32 errCode, void* param1, void* param2)
                     Ql_memcpy(&Qserver1.wrreq_param,(ST_BLE_WRreq*)param2,sizeof(ST_BLE_WRreq));
                     
                     APP_DEBUG("data from clien:%s\r\n",Qserver1.wrreq_param.value);
-                    
-                    Ql_OS_SendMessage(main_task_id,MSG_GATT_WREG_RESP,&Qserver1.wrreq_param,0);      
+                    if(Qserver1.wrreq_param.need_rsp==1)
+                	{
+                		Ql_OS_SendMessage(main_task_id,MSG_GATT_WREG_RESP,&Qserver1.wrreq_param,0); 
+                	}
                 }
             break;
 
@@ -437,7 +452,10 @@ static void BLE_Callback(s32 event, s32 errCode, void* param1, void* param2)
             APP_DEBUG("dev addr:%s\r\n",(char*)param1);
             break;
          case MSG_BLE_EWREG_IND:
-            
+            {
+				APP_DEBUG("data from clien end\r\n");
+				Ql_OS_SendMessage(main_task_id,MSG_GATT_WREG_RESP,&Qserver1.wrreq_param,0); 
+			}
             break;
                   
         default :
@@ -447,6 +465,20 @@ static void BLE_Callback(s32 event, s32 errCode, void* param1, void* param2)
     
 }
 
+s32 Ble_adv_set(void)
+{
+	s32 ret;
+
+//	ret=RIL_BT_QGatSetadv(Qserver1.gserv_id,0,0,manufacture_data,service_data,adv_service_uuid);
+	ret=RIL_BT_QGatadvData(Qserver1.gserv_id,ble_adv_set);
+	if(ret != 0)
+	{
+		APP_DEBUG("RIL_BT_QGatSetadv,ret=%d.", ret);
+		return ret;
+	}
+	
+	return RIL_BT_QGatScanRsp(Qserver1.gserv_id,ble_rsp_data);
+}
 static void BLE_COM_Demo(void)
 {
     s32 cur_pwrstate = 0 ;
@@ -483,7 +515,12 @@ static void BLE_COM_Demo(void)
     RIL_BT_GetPwrState(&cur_pwrstate);
     APP_DEBUG("BT power  cur_pwrstate=%d.\r\n",cur_pwrstate);
 
-
+	ret = RIL_BT_SetVisble(0,0);   //set BT invisble           
+    if(RIL_AT_SUCCESS != ret) 
+    {
+        APP_DEBUG("visible failed!\r\n");
+    }
+	
     ret = RIL_BLE_Initialize(BLE_Callback);
 
     if(RIL_AT_SUCCESS != ret) 
@@ -498,23 +535,82 @@ static void BLE_COM_Demo(void)
     Qserver1.gserv_id[1]='B';
     Qserver1.gserv_id[2]='\0';
     Qserver1.sid=0;   // for service index
-    Qserver1.service_id[Qserver1.sid].service_uuid=0x6618;
-    Qserver1.service_id[Qserver1.sid].num_handles=5;
+
+    Ql_memcpy(Qserver1.service_id[Qserver1.sid].service_uuid,"010102030405060708090A0B0C0D0E0F", 32);
+    Qserver1.service_id[Qserver1.sid].num_handles=15;
     Qserver1.service_id[Qserver1.sid].is_primary=1;
     Qserver1.service_id[Qserver1.sid].inst=254;
     Qserver1.service_id[Qserver1.sid].cid=0;
     c_i= Qserver1.service_id[Qserver1.sid].cid;
-    Qserver1.service_id[Qserver1.sid].char_id[c_i].char_uuid=0x232a;
-    Qserver1.service_id[Qserver1.sid].char_id[c_i].inst=2;
-    Qserver1.service_id[Qserver1.sid].char_id[c_i].prop=58;
+
+    c_i=0;
+    Ql_memcpy(Qserver1.service_id[Qserver1.sid].char_id[c_i].char_uuid,"010202030405060708090A0B0C0D0E0F", 32);
+    Qserver1.service_id[Qserver1.sid].char_id[c_i].inst=1;
+    Qserver1.service_id[Qserver1.sid].char_id[c_i].prop=16;
     Qserver1.service_id[Qserver1.sid].char_id[c_i].permission=17;
     Qserver1.service_id[Qserver1.sid].char_id[c_i].did=0;
     d_id =Qserver1.service_id[Qserver1.sid].char_id[c_i].did;
-    Qserver1.service_id[Qserver1.sid].char_id[c_i].desc_id[d_id].desc_uuid=0x1329;
+    Ql_memcpy(Qserver1.service_id[Qserver1.sid].char_id[c_i].desc_id[d_id].desc_uuid, "0229", 4);
     Qserver1.service_id[Qserver1.sid].char_id[c_i].desc_id[d_id].inst=1;
     Qserver1.service_id[Qserver1.sid].char_id[c_i].desc_id[d_id].permission=17;
+
+    c_i=1;
+    Ql_memcpy(Qserver1.service_id[Qserver1.sid].char_id[c_i].char_uuid,"010302030405060708090A0B0C0D0E0F", 32);
+    Qserver1.service_id[Qserver1.sid].char_id[c_i].inst=2;
+    Qserver1.service_id[Qserver1.sid].char_id[c_i].prop=6;//read and write without response 
+    Qserver1.service_id[Qserver1.sid].char_id[c_i].permission=17;
+
     Qserver1.service_id[Qserver1.sid].transport=2;
 
+	APP_DEBUG("<--RIL_BT_Gatsreg: gserv_id=%s -->\r\n", Qserver1.gserv_id);
+
+    ret = RIL_BT_Gatsreg(1, &Qserver1);//register server
+    if(ret != 0)
+    {
+    	APP_DEBUG("<--RIL_BT_Gatsreg: ret=%d -->\r\n", ret);
+    }
+
+	ret = RIL_BT_Gatss(1, &Qserver1);//add service
+    if(ret != 0)
+    {
+		APP_DEBUG("<--RIL_BT_Gatss: ret=%d -->\r\n", ret);
+	}
+	Qserver1.service_id[Qserver1.sid].cid=0;
+	c_i= Qserver1.service_id[Qserver1.sid].cid;
+	ret = RIL_BT_Gatsc(1, &Qserver1);//add character
+    if(ret != 0)
+    {
+		APP_DEBUG("<--RIL_BT_Gatsc: ret=%d -->\r\n", ret);
+    }
+	Qserver1.service_id[Qserver1.sid].char_id[c_i].did=0;
+	ret = RIL_BT_Gatsd(1, &Qserver1);
+    if(ret != 0)
+    {
+		APP_DEBUG("<--RIL_BT_Gatsd: ret=%d -->\r\n", ret);
+    }
+
+	Qserver1.service_id[Qserver1.sid].cid=1;
+	c_i= Qserver1.service_id[Qserver1.sid].cid;
+	ret = RIL_BT_Gatsc(1, &Qserver1);//add character
+	if(ret != 0)
+	{
+		APP_DEBUG("<--RIL_BT_Gatsc: ret=%d -->\r\n", ret);
+	}
+	ret = RIL_BT_Gatsst(1, &Qserver1);//start service
+    if(ret != 0)
+    {
+		APP_DEBUG("<--RIL_BT_Gatsst: ret=%d -->\r\n", ret);
+    }
+	//     set_ble_name();
+	ret = RIL_BT_Gatsl(1,&Qserver1);
+	if(ret != 0)
+	{
+		APP_DEBUG("\r\n<--RIL_BT_Gatsl: ret=%d -->\r\n",ret);
+	}
+		
+	Ble_adv_set();
+	
+	return 0;
 }
 
 #endif

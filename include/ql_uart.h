@@ -88,7 +88,8 @@ typedef enum {
     UART_CLR_FE,            // write only, only valid on the physical UART ports
     UART_RX_BYTE_AVAIL,     // read only, valid both on the physical UART and the virtual UART
     UART_RX_BUF_LEFT_ROOM,  // read only,only valid on the virtual UART
-    UART_TX_BUF_LEFT_ROOM   // read only,valid both on the physical UART and the virtual UART
+    UART_TX_BUF_LEFT_ROOM,   // read only,valid both on the physical UART and the virtual UART
+    UART_TX_BUF_SEND_OUT     // read  only, only valid on the physical UART ports
 }Enum_UARTOption;
 
 typedef  enum {
@@ -392,6 +393,7 @@ void  Ql_UART_ClrTxBuffer(Enum_SerialPort port);
 *                        the get option of UART_RX_BYTE_AVAIL valid both on the vitual or the physical port
 *                        the get option of UART_RX_BUF_LEFT_ROOM only valid on the vitual port
 *                        the get option of UART_TX_BYTE_AVAIL valid both on the vitual or physical port
+*                        the get option of UART_TX_BUF_SEND_OUT is only valid on the UART_PORT1 and UART_PORT2 and UART_PORT3
 *              [out]para:
 *			    if opt is UART_VFIFO, point to a struct of ST_UartVfifo
 *                       if opt is UART_RX_BYTE_AVAIL or UART_RX_BUF_LEFT_ROOM or UART_TX_BUF_LEFT_ROOM

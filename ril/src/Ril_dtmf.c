@@ -294,7 +294,7 @@ void OnURCHandler_QToneDet( const char* strURC, void* reserved )
 		{
 			Ql_sscanf(strURC,"%*[^:]: %[^,]",buff);
 			dtmfCode = Ql_atof(buff);
-            if ( dtmfCode < 48 || dtmfCode > 70 )   
+            if ( dtmfCode < 35 || dtmfCode > 70 )   
             {
                 return;     // not dtmfCode return.
             }

@@ -42,13 +42,55 @@
 *               Power on/off GPS.
 *
 * Parameters:   op:[in]
-*                      0: Power on GPS.
-*                      1: Power off GPS.
+*                      1: Power on GPS.
+*                      0: Power off GPS.
 * Return:        
 *               QL_RET_OK indicates this function successes.
 *               QL_RET_ERR_PARAM indicates parameter error.
 *****************************************************************/
 s32 RIL_GPS_Open(u8 op);
+
+/******************************************************************************
+* Function:     RIL_GPS_SetRefLoc
+*  
+* Description:
+*               This function sets the reference location for QuecFastFixOnline. 
+*
+* Parameters:    
+*               <lat>:
+*                   [in]double, latitude
+*               <lon>
+*                   [in]double, longitude
+* Return:
+*                RIL_AT_SUCCESS,send AT successfully.
+*                RIL_AT_FAILED, send AT failed.
+*                RIL_AT_TIMEOUT,send AT timeout.
+*                RIL_AT_BUSY,   sending AT.
+*                RIL_AT_INVALID_PARAM, invalid input parameter.
+*                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
+*                                      and then call Ql_RIL_Initialize to initialize RIL.
+******************************************************************************/
+s32 RIL_GPS_SetRefLoc(double lat, double lon);
+
+/******************************************************************************
+* Function:     RIL_GPS_GetPowerState
+*  
+* Description:
+*               This function gets the power state of GNSS. 
+*
+* Parameters:    
+*               <stat>:
+*                   [out]pointer of s32, address of s32 variable
+* Return:
+*                RIL_AT_SUCCESS,send AT successfully.
+*                RIL_AT_FAILED, send AT failed.
+*                RIL_AT_TIMEOUT,send AT timeout.
+*                RIL_AT_BUSY,   sending AT.
+*                RIL_AT_INVALID_PARAM, invalid input parameter.
+*                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
+*                                      and then call Ql_RIL_Initialize to initialize RIL.
+******************************************************************************/
+s32  RIL_GPS_GetPowerState(s32 *stat);
 
 /*****************************************************************
 * Function:     RIL_GPS_Read

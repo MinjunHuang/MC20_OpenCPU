@@ -189,7 +189,7 @@ s32 RIL_BT_Gatss(u8 op , ST_BLE_Server* gserv)
            {
                 return RIL_AT_INVALID_PARAM;
            }
-           Ql_sprintf(strAT, "AT+QBTGATSS=%d,\"%s\",\"%x\",%d,%d,%d",op,gserv->gserv_id,service_op->service_uuid,service_op->num_handles,service_op->is_primary,service_op->inst);
+           Ql_sprintf(strAT, "AT+QBTGATSS=%d,\"%s\",\"%s\",%d,%d,%d",op,gserv->gserv_id,service_op->service_uuid,service_op->num_handles,service_op->is_primary,service_op->inst);
   
            ret = Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QBTGatss_Hdlr,(void *)gserv, 0);
            if(gserv->result == 0)
@@ -269,7 +269,7 @@ s32 RIL_BT_Gatsc(u8 op , ST_BLE_Server* gserv)
 
      Ql_memset(strAT, 0x0, sizeof(strAT));
      
-    Ql_sprintf(strAT, "AT+QBTGATSC=%d,\"%s\",%d,\"%x\",%d,%d,%d", op,gserv->gserv_id, gserv->service_id[s_id].service_handle,\
+    Ql_sprintf(strAT, "AT+QBTGATSC=%d,\"%s\",%d,\"%s\",%d,%d,%d", op,gserv->gserv_id, gserv->service_id[s_id].service_handle,\
     char_op->char_uuid, char_op->inst, char_op->prop, char_op->permission);
 
     ret =  Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QBTGatsc_Hdlr, (void *)gserv, 0);
@@ -339,7 +339,7 @@ s32 RIL_BT_Gatsd(u8 op , ST_BLE_Server* gserv)
 
     Ql_memset(strAT, 0x0, sizeof(strAT));
     
-    Ql_sprintf(strAT, "AT+QBTGATSD=%d,\"%s\",%d,\"%x\",%d,%d", op,gserv->gserv_id,gserv->service_id[gserv->sid].service_handle,\
+    Ql_sprintf(strAT, "AT+QBTGATSD=%d,\"%s\",%d,\"%s\",%d,%d", op,gserv->gserv_id,gserv->service_id[gserv->sid].service_handle,\
     des_op->desc_uuid,des_op->inst,des_op->permission);
 
     ret = Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QBTGatsd_Hdlr, (void *)gserv, 0);
@@ -457,9 +457,9 @@ s32 RIL_BT_Gatsst(u8 op , ST_BLE_Server* gserv)
 //AT+QBTGATSIND="ABC2",1,259,1,"74ab" 
 s32 RIL_BT_Gatsind(ST_BLE_Server* gserv)
 {
-    char strAT[100];
+    char strAT[1500];
     s32 result;
-    ST_BLE_WRreq *wr_op = NULL;
+    ST_BLE_Sind *sind_op = NULL;
     ST_BLE_ConnStatus *conn = NULL;
 
     if(gserv == NULL)
@@ -467,16 +467,23 @@ s32 RIL_BT_Gatsind(ST_BLE_Server* gserv)
         return RIL_AT_INVALID_PARAM;
     }
 
-    wr_op = &(gserv->wrreq_param);
+    sind_op = &(gserv->sind_param);
     conn = &(gserv->conn_status);
 
     Ql_memset(strAT,0,sizeof(strAT));
 
-    Ql_sprintf(strAT, "AT+QBTGATSIND=\"%s\",%d,%d,%d,\"%s\"", gserv->gserv_id,conn->connect_id,wr_op->attr_handle,wr_op->need_cnf,wr_op->value);
+    Ql_sprintf(strAT, "AT+QBTGATSIND=\"%s\",%d,%d,%d,\"%s\"", gserv->gserv_id,conn->connect_id,sind_op->attr_handle,sind_op->need_cnf,sind_op->value);
 
-    Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QBTGatsind_Hdlr, (void *)gserv, 0);
-
-    return gserv->result;
+	if(sind_op->need_cnf==1)
+	{
+	    Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QBTGatsind_Hdlr, (void *)gserv, 0);
+		return gserv->result;
+	}
+	else
+	{
+		return Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), NULL,NULL, 0);
+	}
+	  
 }
 
 /*****************************************************************
@@ -727,20 +734,41 @@ s32 RIL_BT_QBTGatadv(u16 min_interval,u16 max_interval)
 *                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
 *****************************************************************/
 //AT+ QGATSETADV =<gserv_id>,<appearance>,<manufacture_data>,<service_data>,<service_uuid>
-s32 RIL_BT_QGatSetadv(char* gserv_id,u16 appearance,u16 string_mode,u8* manufacture_data,u8* service_data,u16 service_uuid)
+s32 RIL_BT_QGatSetadv(char* gserv_id,u16 appearance,u16 string_mode,u8* manufacture_data,u8* service_data,u8* service_uuid)
 {
     char strAT[100];
 	s32 result;
     
     Ql_memset(strAT,0,sizeof(strAT));
 
-    Ql_sprintf(strAT, "AT+QGATSETADV=\"%s\",%d,%d,\"%s\",\"%s\",\"%x\"", gserv_id,appearance,string_mode,manufacture_data,service_data,service_uuid);
+    Ql_sprintf(strAT, "AT+QGATSETADV=\"%s\",%d,%d,\"%s\",\"%s\",\"%s\"", gserv_id,appearance,string_mode,manufacture_data,service_data,service_uuid);
 
 	Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATRsp_QGatSetadv_Hdlr, &result, 0);
 
 	return result;
 
 }
+
+s32 RIL_BT_QGatadvData(char* gserv_id,u8* adv_data)
+{
+    char strAT[100];
+
+    Ql_memset(strAT,0,sizeof(strAT));
+    Ql_sprintf(strAT, "AT+QGATADVDATA=\"%s\",\"%s\"",gserv_id,adv_data);
+
+    return Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), NULL, NULL, 0);
+}
+
+s32 RIL_BT_QGatScanRsp(char* gserv_id,u8* rsp_data)
+{
+    char strAT[100];
+
+    Ql_memset(strAT,0,sizeof(strAT));
+    Ql_sprintf(strAT, "AT+QGATSCANRSP=\"%s\",\"%s\"", gserv_id,rsp_data);
+
+    return Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), NULL, NULL, 0);
+}
+
 
 /*****************************************************************
 * Function:     RIL_BT_Gatcpu
@@ -763,7 +791,7 @@ s32 RIL_BT_Gatcpu(char* bt_addr,u16 min_interval,u16 max_interval,u16 timeout,u1
     char strAT[100];
   
     Ql_memset(strAT,0,sizeof(strAT));
-    Ql_sprintf(strAT, "AT+QBTGATCPU=%s,%d,%d,%d,%d,%d",bt_addr ,min_interval,max_interval,timeout,latency);
+    Ql_sprintf(strAT, "AT+QBTGATCPU=%s,%d,%d,%d,%d",bt_addr ,min_interval,max_interval,timeout,latency);
     return Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), NULL, NULL, 0);
 }
 
@@ -885,7 +913,7 @@ void OnURCHandler_BTGatwreq(const char* strURC, void* reserved)
 {
     s32 err_code = 0;
     char urcHead[50];
-    char server_id[32];  
+    char server_id[33];  
     ST_BLE_WRreq  wreg_para;
 
     Ql_strcpy(urcHead, "\r\n+QBTGATWREQ:");
@@ -912,6 +940,34 @@ void OnURCHandler_BTGatwreq(const char* strURC, void* reserved)
         return; 
 }
 
+//+QBTGATEWREQ: <gserv_id>,<conn_id>,<trans_id>,<bt_addr>,<cancel>
+void OnURCHandler_BTGatewreq(const char* strURC, void* reserved)
+{
+    s32 err_code = 0;
+    char urcHead[50];
+    char server_id[33];
+    ST_BLE_WRreq  wreg_para;
+ 
+    Ql_strcpy(urcHead, "\r\n+QBTGATEWREQ:");
+     if (Ql_StrPrefixMatch(strURC, urcHead))
+    {
+        Ql_sscanf(strURC, "%*[^\"]\"%[^\"]%*[^\r\n]\r\n",&server_id );
+    
+        Ql_sscanf(strURC, "%*[^:]: %*[^,],%*[^,],%d,%*[^\r\n]\r\n",&(wreg_para.trans_id));  
+         
+        Ql_sscanf(strURC, "%*[^:]: %*[^,],%*[^,],%*[^,],%*[^,],%d,%*[^\r\n]\r\n", &(wreg_para.attr_handle));
+	
+		Ql_sscanf(strURC, "%*[^:]: %*[^,],%*[^,],%*[^,],%*[^,],%[^\r\n]\r\n", &(wreg_para.cancel));
+       
+        if(callback_bt != NULL)
+        {
+            callback_bt(MSG_BLE_EWREG_IND,0,&server_id, &wreg_para);
+        }
+      
+    }
+        return; 
+}
+
 
 //+QBTGATRREQ: <gserv_id>,<conn_id>,<trans_id>,<bt_addr>,<attr_handle>,<is_long>,<offset>
 //+QBTGATRREQ: "ABC2",1,18,CB2CD7923F46,259,0,0
@@ -919,7 +975,7 @@ void OnURCHandler_BTGatrreq(const char* strURC, void* reserved)
 {
     s32 err_code = 0;
     char urcHead[50];
-    char server_id[32];
+    char server_id[33];
     ST_BLE_WRreq  wreg_para;
 
     Ql_strcpy(urcHead, "\r\n+QBTGATRREQ:");

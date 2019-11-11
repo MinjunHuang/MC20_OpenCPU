@@ -51,10 +51,10 @@
 #define   GAT_STOP       (0)
 #define   GAT_START    (1)
 
-#define SERVICE_NUM 10
-#define CHAR_NUM 10
-#define DESC_NUM 2
-#define VALUE_NUM 32
+#define SERVICE_NUM 3
+#define CHAR_NUM 2
+#define DESC_NUM 1
+#define VALUE_NUM 512*2+1
 
 /* Be device address struct */
 typedef struct
@@ -86,17 +86,25 @@ typedef struct
 typedef struct
 {
      s32 trans_id;
-     s32 need_cnf;
      s32 need_rsp; 
      s32 attr_handle;
+	 s32 cancel;
      char value[VALUE_NUM];
 } ST_BLE_WRreq;
 
 typedef struct
 {
+     s32 trans_id;
+     s32 need_cnf;
+     s32 attr_handle;
+     char value[VALUE_NUM];
+}ST_BLE_Sind;
+
+typedef struct
+{
     u8  inst;
     u8  is_used;
-    u16 desc_uuid;
+    u8 desc_uuid[33];
     s32 desc_handle;
     u32 permission;   
 }ST_BLE_Desc;
@@ -105,7 +113,7 @@ typedef struct
 {
     u8  inst;
     u8  is_used;
-    u16 char_uuid;
+    u8 char_uuid[33];
     s32 char_handle;
     u32 permission;
     u32 prop;
@@ -123,7 +131,7 @@ typedef struct
     u8  cid;
     u8  is_used;
     u8  is_started;
-    u16 service_uuid;  
+    u8 service_uuid[33];  
     s32 service_handle;
     s32 in_service;
     ST_BLE_Char  char_id[CHAR_NUM];   
@@ -135,6 +143,7 @@ typedef struct
      char gserv_id[32];
      s32 result;
      ST_BLE_WRreq  wrreq_param;
+     ST_BLE_Sind  sind_param;
      ST_BLE_ConnStatus conn_status;
      ST_BLE_Service  service_id[SERVICE_NUM];
 } ST_BLE_Server;
@@ -436,7 +445,7 @@ s32 RIL_BT_QBTGatadv(u16 min_interval,u16 max_interval);
 *                RIL_AT_INVALID_PARAM, invalid input parameter.
 *                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
 *****************************************************************/
-s32 RIL_BT_QGatSetadv(char* gserv_id,u16 appearance,u16 string_mode,u8* manufacture_data,u8* service_data,u16 service_uuid);
+s32 RIL_BT_QGatSetadv(char* gserv_id,u16 appearance,u16 string_mode,u8* manufacture_data,u8* service_data,u8* service_uuid);
 
 
 /*****************************************************************
@@ -496,6 +505,11 @@ s32 RIL_BT_GetLeLocalAddr(char* ptrAddr,u8 len);
 *                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
 *****************************************************************/
 s32 RIL_BT_QGatsdisc(u8 conn_id);
+
+
+s32 RIL_BT_QGatadvData(char* gserv_id,u8* adv_data);
+
+s32 RIL_BT_QGatScanRsp(char* gserv_id,u8* rsp_data);
 
 #endif
 #endif	//__RIL_BLE_H__

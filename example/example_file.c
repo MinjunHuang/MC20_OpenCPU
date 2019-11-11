@@ -379,7 +379,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
                     Ql_strncpy(filePath,p1,p2-p1);
                      //open file
                     #ifdef __TEST_FOR_RAM_FILE__
-                        handle = Ql_FS_OpenRAMFile(filePath,QL_FS_CREATE|QL_FS_READ_WRITE, LENGTH);
+                        handle = Ql_FS_OpenRAMFile(filePath,QL_FS_READ_WRITE, LENGTH);
                     #else
                         handle = Ql_FS_Open(filePath,QL_FS_READ_WRITE );
                     #endif
@@ -401,7 +401,7 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
                     }
                     else
                     {
-                         APP_DEBUG("\r\n<--The file has exist-->\r\n");
+                        APP_DEBUG("\r\n<--The file(%s) has exist,handle = %d-->\r\n",filePath,handle);
                     }
                     Ql_FS_Close(handle);
                     handle=-1;

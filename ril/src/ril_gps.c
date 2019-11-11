@@ -58,6 +58,80 @@ s32 RIL_GPS_Open(u8 op)
 	return Ql_RIL_SendATCmd(strAT, atLength, NULL, NULL, 0);
 }
 
+s32 RIL_GPS_SetRefLoc(double lat, double lon)
+{
+	char strAT[50] = {"\0"};
+    u16  atLength = 0;
+
+	Ql_memset(strAT, 0x0, sizeof(strAT));
+
+	atLength = Ql_sprintf(strAT, "AT+QGREFLOC=%f,%f",lat,lon);
+
+	return Ql_RIL_SendATCmd(strAT, atLength, NULL, NULL, 0);
+}
+
+static s32 ATResponse_QGNSSC_Handler(char* line, u32 len, void* userdata)
+{
+    char *head = Ql_RIL_FindString(line, len, "+QGNSSC:"); //continue wait
+    if(head)
+    {
+        s32 *state = (s32 *)userdata;
+        Ql_sscanf(head,"%*[^:]: %d\r\n",state);
+        return  RIL_ATRSP_CONTINUE;
+    }
+
+   head = Ql_RIL_FindLine(line, len, "OK"); // find <CR><LF>OK<CR><LF>, <CR>OK<CR>£¬<LF>OK<LF>
+   if(head)
+   {
+       return  RIL_ATRSP_SUCCESS;
+   }
+
+    head = Ql_RIL_FindLine(line, len, "ERROR");// find <CR><LF>ERROR<CR><LF>, <CR>ERROR<CR>£¬<LF>ERROR<LF>
+    if(head)
+    {  
+        return  RIL_ATRSP_FAILED;
+    } 
+
+    head = Ql_RIL_FindString(line, len, "+CME ERROR:");//fail
+    if(head)
+    {
+        return  RIL_ATRSP_FAILED;
+    }
+
+    return RIL_ATRSP_CONTINUE; //continue wait
+}
+/******************************************************************************
+* Function:     RIL_GPS_GetPowerState
+*  
+* Description:
+*               This function gets the GSM network register state. 
+*
+* Parameters:    
+*               stat:
+*                   [out]GPRS State.
+* Return:
+*                RIL_AT_SUCCESS,send AT successfully.
+*                RIL_AT_FAILED, send AT failed.
+*                RIL_AT_TIMEOUT,send AT timeout.
+*                RIL_AT_BUSY,   sending AT.
+*                RIL_AT_INVALID_PARAM, invalid input parameter.
+*                RIL_AT_UNINITIALIZED, RIL is not ready, need to wait for MSG_ID_RIL_READY
+*                                      and then call Ql_RIL_Initialize to initialize RIL.
+******************************************************************************/
+s32  RIL_GPS_GetPowerState(s32 *stat)
+{
+    s32 retRes = -1;
+    s32 nStat = 0;
+    char strAT[] = "AT+QGNSSC?\0";
+
+    retRes = Ql_RIL_SendATCmd(strAT, Ql_strlen(strAT), ATResponse_QGNSSC_Handler, &nStat, 0);
+    if(RIL_AT_SUCCESS == retRes)
+    {
+       *stat = nStat; 
+    }
+    return retRes;
+}
+
 s32 RIL_GPS_Read(u8 *item, u8 *rdBuff)
 {
 	char strAT[50] = {"\0"};

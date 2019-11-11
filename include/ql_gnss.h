@@ -37,6 +37,8 @@
 #include "ql_common.h"
 #include "ql_system.h"
 
+#define MAX_NMEA_LEN		255
+
 typedef enum {
     NO_NMEA_EN  = 0x00000000,
 	RMC_EN      = 0x00000001,
@@ -56,6 +58,12 @@ typedef enum {
 	ALL_NMEA_EN = 0xFFFFFFFF
 }Enum_NMEAFlag;
 
+typedef struct 
+{ 
+    double lat;     // Latitude
+    double lon;     // Longitude
+}st_pos;
+
 /*****************************************************************
 * Function:     Ql_GNSS_PowerOn 
 * 
@@ -64,6 +72,9 @@ typedef enum {
 *               specified NMEA sentences. 
 *               NMEA callback function used for receiving the NMEA sentences from CORE by parameters
 *               of nmea_buff and len.
+*               NOTE: 
+*                   The stack size of task calling this function shouldn't less than 2kB.
+*                   This function should be called in pairs with Ql_GNSS_PowerDown.
 *
 * Parameters:
 *               [in]nmea_type:   
@@ -88,7 +99,8 @@ s32 Ql_GNSS_PowerOn(Enum_NMEAFlag nmea_type, CallBack_NMEA_Hdlr callback_nmea,vo
 * 
 * Description:
 *               This function is used to power down the GNSS.
-*
+*               NOTE: 
+*                   This function should be called in pairs with Ql_GNSS_PowerOn.
 * Parameters:
 *               None.
 * Return:        

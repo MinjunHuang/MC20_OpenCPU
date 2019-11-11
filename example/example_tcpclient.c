@@ -925,6 +925,8 @@ void callback_socket_write(s32 socketId, s32 errCode, void* customParam )
 
 void CallBack_GPRS_Deactived(u8 contextId, s32 errCode, void* customParam )
 {
+	m_nSentLen  = 0;
+
     if (errCode == SOC_SUCCESS)
     {
         APP_DEBUG("<--CallBack: deactived GPRS successfully.-->\r\n"); 

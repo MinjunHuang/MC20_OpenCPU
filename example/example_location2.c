@@ -11,7 +11,7 @@
  *
  * Filename:
  * ---------
- *   example_watchdog.c
+ *   example_location2.c
  *
  * Project:
  * --------
@@ -20,7 +20,6 @@
  * Description:
  * ------------
  *   This example demonstrates how to program module location with APIs in OpenCPU.
- *   All debug information will be output through DEBUG port.
  *   
  * Usage:
  * ------
@@ -28,7 +27,7 @@
  *
  *   2. Compile & Run:
  *
- *     Set "C_PREDEF=-D __EXAMPLE_LOCATION__" in gcc_makefile file. And compile the 
+ *     Set "C_PREDEF=-D __EXAMPLE_QLBS__" in gcc_makefile file. And compile the 
  *     app using "make clean/new".
  *     Download image bin to module to run.
  * 
@@ -41,17 +40,18 @@
  *----------------------------------------------------------------------------
  * 
  ****************************************************************************/
-#ifdef __EXAMPLE_LOCATION__
+#ifdef __EXAMPLE_QLBS__
+
 #include "ql_type.h"
 #include "ql_trace.h"
 #include "ql_uart.h"
 #include "ril.h"
 #include "ril_network.h"
-#include "ril_location.h"
+#include "ril_location2.h"
 #include "ql_gprs.h"
 #include "ql_stdlib.h"
 #include "ql_error.h"
-
+#ifdef __OCPU_RIL_QLBS_SUPPORT__
 /****************************************************************************
 * Definition for APN
 ****************************************************************************/
@@ -85,9 +85,9 @@ static void CallBack_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
 }
 
 
-ST_LocInfo locinfo;
+ST_Qlbs_Cfg_Para qlbs_cfg_value = {0};
 static void Location_Program(void);
-static void Callback_Location(s32 result,ST_LocInfo* loc_info);
+static void Callback_Location(s32 result,ST_Lbs_LocInfo* loc_info);
 
 /************************************************************************/
 /*                                                                      */
@@ -112,7 +112,7 @@ void proc_main_task(s32 taskId)
     }
     
 
-    APP_DEBUG("\r\n<-- OpenCPU: Demo for Program Location -->\r\n");  
+    APP_DEBUG("<-- OpenCPU: Demo for QuecLocator 2.0 -->\r\n");  
     while (TRUE)
     {
          Ql_OS_GetMessage(&msg);
@@ -197,22 +197,20 @@ void proc_main_task(s32 taskId)
         }
     }
 }
-
+ST_Lbs_LocInfo locinfo;
 static void Location_Program(void)
 {
 	s32 ret;
 	u8  pdpCntxtId;
-
+    s32 i;
 	u8 location_mode = 0;
-    u8 asynch = 0;
-	ST_CellInfo GetLocation;
-	GetLocation.cellId = 22243;
-	GetLocation.lac = 21764;
-	GetLocation.mnc = 01;
-	GetLocation.mcc = 460;
-	GetLocation.rssi = 0;
-	GetLocation.timeAd = 0;
 
+    Ql_memset(qlbs_cfg_value.token_value,0,MAX_TOKEN_LENGTH);
+    Ql_memcpy(qlbs_cfg_value.token_value,"yourtoken",Ql_strlen("yourtoken"));
+
+    qlbs_cfg_value.asynch_mode = SYNC_MODE;
+    qlbs_cfg_value.time_mode = OUTPUT_TIME;
+    qlbs_cfg_value.update_mode = UPDATE_TIME2RTC;
 	// Set PDP context
 	ret = Ql_GPRS_GetPDPContextId();
 	APP_DEBUG("<-- The PDP context id available is: %d (can be 0 or 1)-->\r\n", ret);
@@ -235,50 +233,65 @@ static void Location_Program(void)
 	ret = RIL_NW_SetAPN(1, APN, USERID, PASSWD);
 	APP_DEBUG("<-- Set APN -->\r\n");
 
-    //PDP activated
+	//PDP activated
     ret = RIL_NW_OpenPDPContext();
     if (ret == RIL_AT_SUCCESS)
 	{
-	    APP_DEBUG("<--PDPContext activated ret=%d-->\r\n",ret );
+	    APP_DEBUG("<-- RIL_NW_OpenPDPContext  ret=%d-->\r\n",ret );
 	}
 
-	// Request to get location
-	APP_DEBUG("<-- Getting module location... -->\r\n");
-	if(location_mode==0)
+    ret = RIL_QLBS_Cfg(TOKEN,&qlbs_cfg_value);
+    if(ret == RIL_AT_SUCCESS)
 	{
-        if(asynch == 1)
-        {
-    		APP_DEBUG("<--Ql_Getlocation-->\r\n");
-    		ret = RIL_GetLocation(Callback_Location);
-    		if(ret != RIL_AT_SUCCESS)
-    		{
-    			APP_DEBUG("<-- Ql_Getlocation error  ret=%d-->\r\n",ret );
-    		}
-        }
-        else if(asynch == 0)
-        {
-            ret = RIL_GetLocation_Ex(&locinfo);
-    		if(ret == RIL_AT_SUCCESS)
-    		{
-    			APP_DEBUG("<-- Getlocation succeed  ret=%d-->\r\n",ret );
-                APP_DEBUG("<--Module location: latitude=%f, longitude=%f -->\r\n", locinfo.latitude, locinfo.longitude);
-    		}
-        }
+		APP_DEBUG("<-- RIL_QLBS_Cfg TOKEN  ret=%d-->\r\n",ret );
 	}
-	else if(location_mode==1)
+
+    ret = RIL_QLBS_Cfg(WITHTIME,&qlbs_cfg_value);
+    if(ret == RIL_AT_SUCCESS)
 	{
-		APP_DEBUG("<--Ql_GetlocationByCell-->\r\n");
-		ret = RIL_GetLocationByCell(&GetLocation,Callback_Location);
-		if(ret!=RIL_AT_SUCCESS)
-		{
-			APP_DEBUG("<-- Ql_GetlocationByCell error  ret=%d-->\r\n",ret );
-		}
+		APP_DEBUG("<-- RIL_QLBS_Cfg WITHTIME  ret=%d-->\r\n",ret );
 	}
+
+    ret = RIL_QLBS_Cfg(TIMEUPDATE,&qlbs_cfg_value);
+    if(ret == RIL_AT_SUCCESS)
+	{
+		APP_DEBUG("<-- RIL_QLBS_Cfg TIMEUPDATE  ret=%d-->\r\n",ret );
+	}
+
+    ret = RIL_QLBS_Cfg(ASYNCH_MODE,&qlbs_cfg_value);
+    if(ret == RIL_AT_SUCCESS)
+	{
+		APP_DEBUG("<-- RIL_QLBS_Cfg ASYNCH_MODE ret=%d-->\r\n",ret );
+	}
+    if(ASYNC_MODE == qlbs_cfg_value.asynch_mode)
+    {
+        ret = RIL_QLBS_Loc(Callback_Location);
+        if(ret == RIL_AT_SUCCESS)
+    	{
+    		APP_DEBUG("<-- RIL_QLBS_Loc,ret=%d-->\r\n",ret );
+    	}
+    }
+    else
+    {
+        ret = RIL_QLBS_Loc_Ex(&locinfo);
+    	if(ret == RIL_AT_SUCCESS)
+    	{
+    		APP_DEBUG("<-- RIL_QLBS_Loc_Ex succeed  ret=%d-->\r\n",ret );
+            APP_DEBUG("<--Module location: latitude=%f, longitude=%f time:%s\r\n", locinfo.latitude, locinfo.longitude,locinfo.time);
+    	}
+        else
+        {
+            APP_DEBUG("<-- RIL_QLBS_Loc_Ex failed  ret=%d-->\r\n",ret );
+        }
+    }
+    
 }
 
-void Callback_Location(s32 result, ST_LocInfo* loc_info)
+void Callback_Location(s32 result, ST_Lbs_LocInfo* loc_info)
 {
-    APP_DEBUG("\r\n<--result = %d ,Module location: latitude=%f, longitude=%f -->\r\n",result, loc_info->latitude, loc_info->longitude);
+    APP_DEBUG("\r\n<-- Module location: latitude=%f, longitude=%f result:%d-->\r\n", loc_info->latitude, loc_info->longitude,result);
+    APP_DEBUG("time:%s\r\n",loc_info->time);
 }
 
+#endif
 #endif // __EXAMPLE_LOCATION__

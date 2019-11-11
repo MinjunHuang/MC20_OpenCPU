@@ -98,15 +98,14 @@ TASK_ITEM(proc_subtask1,  subtask1_id, 1*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
 TASK_ITEM(proc_subtask1,  subtask1_id, 10*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
 #endif
 
-
-#ifdef __OCPU_SMART_CLOUD_SUPPORT__
-#ifdef __GITWIZS_SOLUTION__
-TASK_ITEM(gagent_main_task,  gagent_main_task_id, 10*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
-TASK_ITEM(gagent_cloud_task, gagent_cloud_task_id, 10*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
-TASK_ITEM(gagent_mcu_task, gagent_mcu_task_id, 10*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
-#endif
+#ifdef __EXAMPLE_BLE_CLIENT__
+TASK_ITEM(proc_subtask1,  subtask1_id, 10*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
 #endif
 
+
+#ifdef __EXAMPLE_EPO_CALLBACK__
+TASK_ITEM(proc_subtask1,  subtask1_id, 2*1024, DEFAULT_VALUE1, DEFAULT_VALUE2)
+#endif
 
 /**
  ******* TAST CONFIG END ********

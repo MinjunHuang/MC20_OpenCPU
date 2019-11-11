@@ -38,8 +38,6 @@
 #include "nema_pro.h"
 
 
-#define __GNSS_NEW_API__            // receive NMEA by callback funciton
-
 #define DEBUG_ENABLE 1
 #if DEBUG_ENABLE > 0
 #define DEBUG_PORT  UART_PORT1
@@ -147,264 +145,6 @@ void Callback_GPS_CMD_Hdlr(char *str_URC)
 	}
 }
 
-#ifdef __GNSS_NEW_API__
-/*****************************************************************
-* Function:     isXdigit 
-* 
-* Description:
-*               This function is used to check whether the 
-*               input character number is a uppercase hexadecimal digital.
-*
-* Parameters:
-*               [in]ch:   
-*                       A character num.
-*
-* Return:        
-*               TRUE  - The input character is a uppercase hexadecimal digital.
-*               FALSE - The input character is not a uppercase hexadecimal digital.
-*
-*****************************************************************/
-bool isXdigit(char ch)
-{
-    if((ch>='0' && ch<='9'
-) || (ch >= 'A' && ch<='F'))
-    {
-        return TRUE;
-    }
-
-    return FALSE;
-}
-
-/*****************************************************************
-* Function:     Ql_check_nmea_valid 
-* 
-* Description:
-*               This function is used to check whether the 
-*               input nmea is a valid nmea which contains '$' and <CR>.
-*
-* Parameters:
-*               [in]nmea_in:   
-*                       string of a sigle complete NMEA sentence
-*
-* Return:        
-*               TRUE  - nmea_in is a valid NMEA sentence.
-*               FALSE - nmea_in is an invalid NMEA sentence.
-*
-*****************************************************************/
-bool Ql_check_nmea_valid(char *nmea_in)
-{
-    char *p=NULL, *q=NULL;
-    
-    u8 len = Ql_strlen(nmea_in);
-    
-    if(len > MAX_NMEA_LEN)                              // validate NMEA length
-    {
-        return FALSE;
-    }
-    
-    p = nmea_in;
-    if(*p == '$')                                       // validate header
-    {
-        q=Ql_strstr(p, "\r");                           // validate tail
-        if(q)
-        {
-            if(isXdigit(*(q-1)) && isXdigit(*(q-2)))    // validate checksum is a hex digit
-            {
-                u8 cs_cal = 0;
-                char cs_str[3]={0};
-                while(*++p!='*')
-                {
-                    cs_cal ^= *p;
-                }
-                Ql_sprintf(cs_str, "%X", cs_cal);        // checksum is always uppercase.
-                if(!Ql_strncmp(cs_str, q-2, 2))          // validate checksum(2 bits)
-                {
-                    return TRUE;
-                }
-                else
-                {
-                    return FALSE;
-                }
-            }
-            else
-            {
-                return FALSE;
-            }
-        }
-        else
-        {
-            return FALSE;
-        }
-    }
-    else
-    {
-        return FALSE;
-    }
-    
-    return FALSE;
-}
-
-/*****************************************************************
-* Function:     Ql_get_nmea_segment_by_index 
-* 
-* Description:
-*               This function is used to get the specified segment from a string
-*               of a sigle complete NMEA sentence which contains '$' and <CR>.
-*
-* Parameters:
-*               [in]nmea_in:   
-*                       String of a sigle complete NMEA sentence
-*               [in]index:     
-*                       The index of the segment to get.
-*               [out]segment: 
-*                       The buffer to save the specified segment.
-*               [in]max_len: 
-*                       The length of the segment buffer.
-*
-* Return:        
-*               >0 - Get segment successfully and it's the length of the segment.
-*               =0 - Segment is empty.
-*               <0 - Error number.
-*
-*****************************************************************/
-char Ql_get_nmea_segment_by_index(char *nmea_in, u8 index, char *segment, u8 max_len)
-{
-    char *p=NULL, *q=NULL;
-    u8 i=0;
-    
-    p = nmea_in;
-    q = NULL;
-    
-    for(i=0; i<index; i++)
-    {
-        q=Ql_strstr(p, ",");
-        if(q)
-        {
-            p = q+1;
-        }
-        else
-        {
-            break;
-        }
-    }
-    
-    q = NULL;
-    if(i<index)
-    {
-        return -1;                  // Segment is not exist;
-    }
-    else
-    {
-        if((q=Ql_strstr(p, ",")) || (q=Ql_strstr(p, "*")))
-        {
-            u8 dest_len = q-p;
-            if((*p==',') && (dest_len==1))
-            {
-                return 0;           // Segment is empty which is between ',' and ',' or ',' and '*'.
-            }            
-            else if(dest_len<max_len)
-            {
-                Ql_memset(segment, 0, max_len);
-                Ql_memcpy(segment, p, dest_len);
-                return dest_len;
-            }
-            else
-            {
-                return -2;          // Segment is longer than max_len!
-            }
-        }
-        else
-        {
-            return -1;             // Segment is not exist;
-        }
-    }
-    return -100;                   // Unknow error!
-}
-
-
-void Customer_NMEA_Hdlr(u8 *multi_nmea, u16 len, void *customizePara)
-{
-    u8 *p=NULL, *q=NULL;
-    char one_nmea[MAX_NMEA_LEN+1];
-    char dest_segment[32];
-
-    //RMC
-    p=NULL; q=NULL;
-    p = Ql_strstr(multi_nmea, "$GNRMC");
-    if(p)
-    {
-        q = Ql_strstr(p, "\r");
-        if(q)
-        {
-            Ql_memset(one_nmea, 0, sizeof(one_nmea));
-            Ql_memcpy(one_nmea, p, q-p+1);
-            if(Ql_check_nmea_valid(one_nmea))
-            {
-                //fix status - index 2
-                char ret=-1;
-                ret = Ql_get_nmea_segment_by_index(one_nmea, 2, dest_segment, sizeof(dest_segment));
-                if(ret > 0)
-                {
-                    if(!Ql_strcmp(dest_segment, "A"))
-                    {
-                        APP_DEBUG("Fixed, Fix status: %s\r\n", dest_segment);
-                    }
-                    else
-                    {
-                        APP_DEBUG("Unfixed, Fix status: %s\r\n", dest_segment);
-                    }
-                }
-                
-                //Latitude - index 3
-                ret = -1;
-                ret = Ql_get_nmea_segment_by_index(one_nmea, 3, dest_segment, sizeof(dest_segment));
-                if(ret > 0)
-                {
-                    double dLat=0.0;
-                    dLat = Ql_atof(dest_segment);
-                    APP_DEBUG("Latitude: %0.4f\r\n", dLat);
-                }
-
-                //Longitude -index 5
-                ret=-1;
-                ret = Ql_get_nmea_segment_by_index(one_nmea, 5, dest_segment, sizeof(dest_segment));
-                if(ret > 0)
-                {
-                    double dLon=0.0;
-                    dLon = Ql_atof(dest_segment);
-                    APP_DEBUG("Longitude: %0.4f\r\n", dLon);
-                }
-            }
-        }
-    }
-
-    //GGA
-    p=NULL; q=NULL;
-    p = Ql_strstr(multi_nmea, "$GNGGA");
-    if(p)
-    {
-        q = Ql_strstr(p, "\r");
-        if(q)
-        {
-            Ql_memset(one_nmea, 0, sizeof(one_nmea));
-            Ql_memcpy(one_nmea, p, q-p+1);
-            if(Ql_check_nmea_valid(one_nmea))
-            {
-                //Altitude - index 9
-                char ret = -1;
-                ret = Ql_get_nmea_segment_by_index(one_nmea, 9, dest_segment, sizeof(dest_segment));
-                if(ret > 0)
-                {
-                    double dAut=0.0;
-                    dAut = Ql_atof(dest_segment);
-                    APP_DEBUG("Altitude: %0.1f\r\n", dAut);
-                }
-            }
-        }
-    }
-}
-#endif
-
 static void Callback_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, bool level, void* param)
 {
     s32 iRet = 0;
@@ -425,11 +165,7 @@ static void Callback_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
 			p = Ql_strstr(m_RxBuf_Uart, "GPSOpen");
             if(p)
             {
-                #ifdef __GNSS_NEW_API__
-                iRet = Ql_GNSS_PowerOn(RMC_EN | GGA_EN, Customer_NMEA_Hdlr, NULL);  // Also can use ALL_NMEA_EN to enable receiving all NMEA sentences.
-                #else
                 iRet = RIL_GPS_Open(1);
-                #endif
                 if(RIL_AT_SUCCESS != iRet) 
                 {
                     APP_DEBUG("Power on GPS fail, iRet = %d.\r\n", iRet);
@@ -444,11 +180,7 @@ static void Callback_UART_Hdlr(Enum_SerialPort port, Enum_UARTEventType msg, boo
             p = Ql_strstr(m_RxBuf_Uart, "GPSClose");
             if(p)
             {
-                #ifdef __GNSS_NEW_API__
-                iRet = Ql_GNSS_PowerDown();
-                #else
                 iRet = RIL_GPS_Open(0);
-                #endif
                 if(RIL_AT_SUCCESS != iRet) 
                 {
                     APP_DEBUG("Power off GPS fail, iRet = %d.\r\n", iRet);

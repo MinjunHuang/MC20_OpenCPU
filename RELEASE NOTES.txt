@@ -1,3 +1,21 @@
+OpenCPU_GS3_SDK_V1.7
+May 13 2019
+1.Fixed bug with Ql_SecureData_Read().
+2.Add full duplex spi function Ql_SPI_WriteRead().
+3.Document update.
+
+
+OpenCPU_GS3_SDK_V1.6
+Sep 3 2018
+
+1.The optimization of base station location and the addition of synchronization mode.
+
+OpenCPU_GS3_SDK_V1.5
+Aug 24 2018
+
+1.Updated MC20 and MC60 documents.
+2.Code optimization.
+
 OpenCPU_GS3_SDK_V1.4
 Sep 19 2017
 

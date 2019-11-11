@@ -43,11 +43,11 @@ static char DBG_BUFFER[DBG_BUF_LEN];
 #define USERID   ""
 #define PASSWD   ""
 
-#define FTP_SVR_ADDR    "124.74.41.170"
+#define FTP_SVR_ADDR    "101.95.183.122"
 #define FTP_SVR_PORT    "21"
 #define FTP_SVR_PATH    "/stanley/"
-#define FTP_USER_NAME   "max.tang"
-#define FTP_PASSWORD    "quectel!~@"
+#define FTP_USER_NAME   "test"
+#define FTP_PASSWORD    "test"
 #define FTP_FILENAME    "MC20_Fotahttp_app.bin"
 
 
@@ -114,7 +114,7 @@ void proc_main_task(s32 taskId)
                     break;
                 case URC_GPRS_NW_STATE_IND:
                     APP_DEBUG("<-- GPRS Network Status:%d -->\r\n", msg.param2);
-                    if (NW_STAT_REGISTERED == msg.param2)
+                    if((NW_STAT_REGISTERED == msg.param2)||(NW_STAT_REGISTERED_ROAMING == msg.param2))
                     {
                         //Ql_Timer_Stop(FotaUpdate_Start_TmrId);
                         ftp_downfile_timer(FotaUpdate_Start_TmrId, NULL);
